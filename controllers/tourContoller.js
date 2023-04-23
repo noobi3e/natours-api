@@ -1,6 +1,7 @@
 // using database
 const APIFeatures = require('../utils/ApiFeatures')
 const TourModel = require('../models/tourModel')
+const AppError = require('../utils/AppError')
 
 // const checkRequestBody = (req, res, next) => {
 //   console.log(req.body)
@@ -16,92 +17,78 @@ const TourModel = require('../models/tourModel')
 // }
 
 const getAllToursWithNotes = async (req, res) => {
-  try {
-    // filtering tours acc to query parameter got from url like: example.com/api/v-1/tours?key=value&anotherykey=value...
+  // filtering tours acc to query parameter got from url like: example.com/api/v-1/tours?key=value&anotherykey=value...
 
-    // not not only we can filter by checking exact value instead we can filter for lt, lte, gte, gt value as well just by passing that value like duration[advanceFilter]=value ex: duration[$gte]=4 this will be converted to object look like {duration: {'$gte': 4}} which is a valid filter to pass in find() method | NOTE: we have to pass this special query with $ sign otherwise we have to manually do it in code because mongodb understand these special query if we write those after $ because that is mongoDB specific
+  // not not only we can filter by checking exact value instead we can filter for lt, lte, gte, gt value as well just by passing that value like duration[advanceFilter]=value ex: duration[$gte]=4 this will be converted to object look like {duration: {'$gte': 4}} which is a valid filter to pass in find() method | NOTE: we have to pass this special query with $ sign otherwise we have to manually do it in code because mongodb understand these special query if we write those after $ because that is mongoDB specific
 
-    // now through query there can special queries like sort, pageNo, limits, fields to return
-    // for these we can filter our query object as shown below: to perform different logic for diff filter
-    const filteredQuery = { ...req.query } // creating a copy of query object to not mutate original query object
+  // now through query there can special queries like sort, pageNo, limits, fields to return
+  // for these we can filter our query object as shown below: to perform different logic for diff filter
+  const filteredQuery = { ...req.query } // creating a copy of query object to not mutate original query object
 
-    // FILTERING SOME SPECIAL QUERY PARAMTERS
-    // filtering some special query
-    // we are deleting some fields that might be present in query object passed by user, to handle those special query separately.
-    const specialFilters = ['sort', 'limit', 'fields', 'page']
-    specialFilters.forEach((qr) => delete filteredQuery[qr]) // this delete operator will delete the certain field of object
+  // FILTERING SOME SPECIAL QUERY PARAMTERS
+  // filtering some special query
+  // we are deleting some fields that might be present in query object passed by user, to handle those special query separately.
+  const specialFilters = ['sort', 'limit', 'fields', 'page']
+  specialFilters.forEach((qr) => delete filteredQuery[qr]) // this delete operator will delete the certain field of object
 
-    // now keep in mind that when we call find() on Model like TourModel that will create a query object if we await that or call then on Model.find() then that will simple return the result (that will be list of documents) but in order to perform advanced filtering like sorting depends on some field or limit the resulted documents, etc, we have to that on query object create by calling .find() method instead of resolving that ex:
-    // in mongoose we can filter the find() results as we do in vanilla mongoDB shell
+  // now keep in mind that when we call find() on Model like TourModel that will create a query object if we await that or call then on Model.find() then that will simple return the result (that will be list of documents) but in order to perform advanced filtering like sorting depends on some field or limit the resulted documents, etc, we have to that on query object create by calling .find() method instead of resolving that ex:
+  // in mongoose we can filter the find() results as we do in vanilla mongoDB shell
 
-    console.log(req.query)
-    console.log(filteredQuery)
-    let queryObj = TourModel.find(filteredQuery)
+  let queryObj = TourModel.find(filteredQuery)
 
-    // SORTING Functionality
-    // now if we get a user request to sort our data acc. to some field we can do that like:
-    // checking if we got sort query paramter
-    if (req.query.sort) {
-      // to sort our documents with more than one sorting criteria mongoose want value as a string separated by space like sort('price duration rating'), for we need to pass more than one value in sort query parameter but spaces is not allowed in urls so we can choose any special character then replace that corrector with space in our code as shown below:
+  // SORTING Functionality
+  // now if we get a user request to sort our data acc. to some field we can do that like:
+  // checking if we got sort query paramter
+  if (req.query.sort) {
+    // to sort our documents with more than one sorting criteria mongoose want value as a string separated by space like sort('price duration rating'), for we need to pass more than one value in sort query parameter but spaces is not allowed in urls so we can choose any special character then replace that corrector with space in our code as shown below:
 
-      // adding space if there is more than one sorting criteria
-      const sortString = req.query.sort.replaceAll('%', ' ')
-      queryObj = queryObj.sort(sortString) // now this will sort the document acc. to sort we got in query string | For ex: if sort=price for this mongoose sort data acc to price in ascending order we want data to be in descending order then we add - in front of value for ex: sort=-price this will sort documents in descending order acc. to price
-      // if sort field doesn't exist then that will result in errror
-    }
-    // adding default sort acc. to createdAt field
-    else {
-      queryObj = queryObj.sort('createdAt')
-    }
-
-    // LIMITING FIELDS
-    // limiting field can cause a huge impact on network bandwidth by limiting fields user can request for certain/limited fields.
-    // checking if user specifies some fields
-    if (req.query.fields) {
-      // as same as sorting we can get mulitple field now we first have to convert those field in a string contains fields separated by space
-      const fields = req.query.fields.replaceAll('%', ' ')
-
-      queryObj = queryObj.select(fields) // select will return document containing fields we pass as arguments | we can also omit some fields by just adding -sign before field name
-    }
-    // default value
-    else {
-      queryObj = queryObj.select('-__v') // removing __v field which mogoose added by default to work properly behind the scenes
-    }
-
-    // PAGINATION
-    // setting default page and limit values if no values given
-    const page = +req.query.page || 1
-    const limit = +req.query.limit || 100
-    const skip = (page - 1) * limit
-
-    queryObj = queryObj.skip(skip).limit(limit)
-
-    const tours = await queryObj
-
-    if (tours.length === 0) throw new Error('😖No Data found for this request.')
-
-    res.status(200).json({
-      status: '✅success',
-      statusCode: 200,
-      result: tours.length,
-      data: {
-        tours,
-      },
-    })
-  } catch (err) {
-    errorHandler(err, res, 404)
+    // adding space if there is more than one sorting criteria
+    const sortString = req.query.sort.replaceAll('%', ' ')
+    queryObj = queryObj.sort(sortString) // now this will sort the document acc. to sort we got in query string | For ex: if sort=price for this mongoose sort data acc to price in ascending order we want data to be in descending order then we add - in front of value for ex: sort=-price this will sort documents in descending order acc. to price
+    // if sort field doesn't exist then that will result in errror
   }
-}
+  // adding default sort acc. to createdAt field
+  else {
+    queryObj = queryObj.sort('createdAt')
+  }
 
-const errorHandler = (err, res, errcode) => {
-  res.status(errcode).json({
-    status: 'fail⚠️',
-    statusCode: errcode,
-    message: err.message,
+  // LIMITING FIELDS
+  // limiting field can cause a huge impact on network bandwidth by limiting fields user can request for certain/limited fields.
+  // checking if user specifies some fields
+  if (req.query.fields) {
+    // as same as sorting we can get mulitple field now we first have to convert those field in a string contains fields separated by space
+    const fields = req.query.fields.replaceAll('%', ' ')
+
+    queryObj = queryObj.select(fields) // select will return document containing fields we pass as arguments | we can also omit some fields by just adding -sign before field name
+  }
+  // default value
+  else {
+    queryObj = queryObj.select('-__v') // removing __v field which mogoose added by default to work properly behind the scenes
+  }
+
+  // PAGINATION
+  // setting default page and limit values if no values given
+  const page = +req.query.page || 1
+  const limit = +req.query.limit || 100
+  const skip = (page - 1) * limit
+
+  queryObj = queryObj.skip(skip).limit(limit)
+
+  const tours = await queryObj
+
+  if (tours.length === 0) throw new Error('😖No Data found for this request.')
+
+  res.status(200).json({
+    status: '✅success',
+    statusCode: 200,
+    result: tours.length,
+    data: {
+      tours,
+    },
   })
 }
 
-const createTour = async (req, res) => {
+const createTour = async (req, res, next) => {
   try {
     const tour = await TourModel.create(req.body)
 
@@ -114,12 +101,12 @@ const createTour = async (req, res) => {
       },
     })
   } catch (err) {
-    errorHandler(err, res, 402)
+    next(err)
   }
 }
 
 // GETTING ALL TOURS
-const getAllTours = async (req, res) => {
+const getAllTours = async (req, res, next) => {
   try {
     const query = new APIFeatures(TourModel.find(), req.query)
       .filter()
@@ -129,7 +116,8 @@ const getAllTours = async (req, res) => {
 
     const tours = await query.mongooseQuery
 
-    if (tours.length === 0) throw new Error('⚠️No Tour found for this request')
+    if (tours.length === 0)
+      throw new AppError('⚠️No Tour found for this request', 404)
 
     res.status(200).json({
       status: '✅success',
@@ -140,7 +128,7 @@ const getAllTours = async (req, res) => {
       },
     })
   } catch (err) {
-    errorHandler(err, res, 404)
+    next(err)
   }
 }
 
@@ -156,17 +144,20 @@ const deleteTour = async (req, res) => {
       data: null,
     })
   } catch (err) {
-    errorHandler(err, res, 500)
+    next(err)
   }
 }
 
 // UPDATING TOUR
-const updateTour = async (req, res) => {
+const updateTour = async (req, res, next) => {
   try {
     const tour = await TourModel.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     })
+
+    console.log(tour)
+    if (!tour) throw new AppError(`No Data found for id: ${req.params.id}`, 404)
 
     res.status(202).json({
       status: '✅success',
@@ -177,13 +168,15 @@ const updateTour = async (req, res) => {
       },
     })
   } catch (err) {
-    updateTour(err, res, 500)
+    next(err)
   }
 }
 
-const getSingleTour = async (req, res) => {
+const getSingleTour = async (req, res, next) => {
   try {
     const tour = await TourModel.findById(req.params.id)
+
+    if (!tour) throw new AppError(`No Data found for id: ${req.params.id}`, 404)
 
     res.status(200).json({
       status: '✅success',
@@ -193,12 +186,12 @@ const getSingleTour = async (req, res) => {
       },
     })
   } catch (err) {
-    errorHandler(err, res, 404)
+    next(err)
   }
 }
 
 // MongoDB Aggregation pipeline
-const getTourStats = async (req, res) => {
+const getTourStats = async (req, res, next) => {
   try {
     // aggregate pipline in mongoDB is used to perform more complex filtering and calculations
     // to create aggregate pipeline we use .aggregate() method which wants an array which then contains objects(also known as stages lead by some operators like $match stage)
@@ -242,11 +235,11 @@ const getTourStats = async (req, res) => {
       },
     })
   } catch (err) {
-    errorHandler(err, res, 404)
+    next(err)
   }
 }
 
-const getMonthlyPlan = async (req, res) => {
+const getMonthlyPlan = async (req, res, next) => {
   try {
     const year = +req.params.year
 
@@ -291,7 +284,7 @@ const getMonthlyPlan = async (req, res) => {
       },
     })
   } catch (err) {
-    errorHandler(err, res, 404)
+    next(err)
   }
 }
 

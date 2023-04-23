@@ -27,6 +27,7 @@ const TourSchema = new Schema({
   price: {
     type: Number,
     required: true,
+    unique: true,
   },
   duration: {
     type: Number,
@@ -89,7 +90,7 @@ TourSchema.pre('save', function (next) {
     .split(' ') // spliting with space
     .filter((res) => res) // filtering extra space as we know '' empty string is a falsy
     .join('-') // then joining with -
-  console.log(name)
+
   next()
 })
 

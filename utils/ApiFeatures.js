@@ -11,8 +11,6 @@ class APIFeatures {
 
     excludedQuery.forEach((fl) => delete filteredQuery[fl])
 
-    console.log(filteredQuery)
-
     this.mongooseQuery = this.mongooseQuery.find(filteredQuery)
 
     return this

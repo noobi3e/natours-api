@@ -4,5 +4,6 @@ module.exports = class AppError extends Error {
 
     this.statusCode = statusCode
     this.status = `${this.statusCode}`[0] === '4' ? 'Fail⚠️' : 'Error💥' // setting error status depends upon status code because error status can only be fail or error depends on statusCode
+    this.isOperational = true // this will help to determine that error occurred when some thing went wrong like wrong route, etc
   }
 }
