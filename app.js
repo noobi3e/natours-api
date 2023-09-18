@@ -4,9 +4,11 @@ const UserRoutes = require('./routes/userRoutes')
 const TourRoutes = require('./routes/tourRoutes')
 const AppError = require('./utils/AppError')
 const { errorController } = require('./controllers/ErrorController')
+const cors = require('cors')
 
 const app = express()
 
+app.use(cors())
 app.use(bodyParser.json())
 
 app.use('/api/v1/users', UserRoutes)

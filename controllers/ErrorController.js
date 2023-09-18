@@ -44,6 +44,22 @@ exports.errorController = (err, req, res, next) => {
       modifiedError = new AppError(err.message, 404)
     }
 
+    // Handling InValid Token Error
+    if (err.name === 'JsonWebTokenError') {
+      modifiedError = new AppError(
+        `${err.message}: this user is not authorized🥲 to access this data, Pls Try Again!!.`,
+        402
+      )
+    }
+
+    // Handling Expired Token Error
+    if (err.name === 'TokenExpiredError') {
+      modifiedError = new AppError(
+        `${err.message}: Your token has been expired😐. Please Log in again!`,
+        402
+      )
+    }
+
     if (modifiedError.isOperational) {
       res.status(modifiedError.statusCode).json({
         status: modifiedError.status,

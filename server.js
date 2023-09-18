@@ -2,6 +2,7 @@ console.clear()
 const dotenv = require('dotenv')
 const app = require('./app')
 const mongoose = require('mongoose')
+const crypto = require('crypto')
 
 dotenv.config({ path: './config.env' })
 
@@ -34,7 +35,7 @@ mongoose
 // Schema is way define a structure for our data to get store in the database
 // model is wrapper around schema which allow us to perform crud operations
 
-// Handling all unhandled promises rejection like if mongo unable to connect or in our if there is any unhandled promise rejection then we have to handle it in one place because we have to keep in mind that as a programmer we always makes mistakes that can cause error
+// Handling all unhandled promises rejection like if mongo unable to connect (if we didn't added a catch block for that) or in our if there is any unhandled promise rejection then we have to handle it in one place because we have to keep in mind that as a programmer we always makes mistakes that can cause error
 // we will will process variable which emit a event whenever there is unhandled promise and we can listen to that event and perform some actions
 // to listen for event on process we have on method and the event is 'unhandledRejection' and as a second argument we pass a function which has access to error variable
 process.on('unhandledRejection', (err) => {

@@ -1,5 +1,6 @@
 const express = require('express')
 const TourController = require('../controllers/tourContoller')
+const AuthController = require('../controllers/authController')
 
 const router = express.Router()
 
@@ -23,9 +24,10 @@ router.route('/top-tour-stats').get(TourController.getTourStats)
 router.route('/monthly-plan/:year').get(TourController.getMonthlyPlan)
 
 // Get all tours and post new tour
+// using verify user middleware before showing tours
 router
   .route('/')
-  .get(TourController.getAllTours)
+  .get(AuthController.authenticateUser, TourController.getAllTours)
   .post(TourController.createTour)
 
 // get / update / delete tour
@@ -33,6 +35,10 @@ router
   .route('/:id')
   .get(TourController.getSingleTour)
   .patch(TourController.updateTour)
-  .delete(TourController.deleteTour)
+  .delete(
+    AuthController.authenticateUser,
+    AuthController.authorizeUser,
+    TourController.deleteTour
+  ) // alowing specific user to make request on this route
 
 module.exports = router

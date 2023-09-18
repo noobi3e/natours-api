@@ -152,8 +152,8 @@ const deleteTour = async (req, res) => {
 const updateTour = async (req, res, next) => {
   try {
     const tour = await TourModel.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
+      new: true, // this will return the updated document as result
+      runValidators: true, // this will run all the validators we define while creating Schema except the custom validator functions
     })
 
     console.log(tour)
